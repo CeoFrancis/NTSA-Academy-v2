@@ -1,0 +1,40 @@
+{
+  "name": "NTSA Driving Academy",
+  "short_name": "NTSA Academy",
+  "description": "Kenya NTSA Driving Theory, Road Signs, Quiz and Model Town Driving Simulator",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080b10",
+  "theme_color": "#f5c518",
+  "orientation": "any",
+  "lang": "en",
+  "categories": ["education", "utilities"],
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Take Quiz",
+      "url": "./index.html#quiz",
+      "description": "Jump straight to the theory quiz"
+    },
+    {
+      "name": "Road Signs",
+      "url": "./index.html#signs",
+      "description": "Browse all Kenya road signs"
+    }
+  ]
+}
