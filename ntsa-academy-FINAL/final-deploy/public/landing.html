@@ -1,0 +1,2158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTB Simulator — Pass Your NTSA Driving Test First Time</title>
+<meta name="description" content="Kenya's #1 NTSA theory test prep. Interactive driving simulator, 200+ road signs, 62 Q&A, and timed practice quizzes. Study anywhere, pass first time.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════
+   RESET & TOKENS
+══════════════════════════════════════════════ */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --gold:    #f5c518;
+  --gold2:   #d4a800;
+  --bg:      #080a0f;
+  --surface: #0e1118;
+  --card:    #12161f;
+  --border:  #1c2535;
+  --border2: #253040;
+  --green:   #00e676;
+  --blue:    #29b6f6;
+  --red:     #ff3d57;
+  --dim:     #68788f;
+  --muted:   #3a4a60;
+  --white:   #f0f4ff;
+
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body:    'Syne', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--white);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:0;
+}
+
+/* ══════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════ */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:1000;
+  padding: 0 40px;
+  height: 64px;
+  display: flex; align-items:center; justify-content:space-between;
+  background: rgba(8,10,15,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.3s;
+}
+
+.nav-logo {
+  display: flex; align-items:center; gap:12px;
+  text-decoration: none;
+}
+
+.nav-badge {
+  width:36px; height:36px;
+  background: var(--gold);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-display);
+  font-size:11px; color:#000; letter-spacing:1px;
+}
+
+.nav-title {
+  font-family: var(--font-display);
+  font-size:20px; letter-spacing:2px; color:var(--gold);
+}
+
+.nav-links {
+  display:flex; align-items:center; gap:32px;
+  list-style:none;
+}
+
+.nav-links a {
+  font-size:12px; font-weight:600; letter-spacing:2px;
+  color:var(--dim); text-decoration:none; text-transform:uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color:var(--white); }
+
+.nav-cta {
+  padding: 10px 24px;
+  background: var(--gold);
+  color:#000 !important;
+  font-weight:700 !important;
+  letter-spacing:2px;
+  border-radius:2px;
+  transition: background 0.2s, transform 0.15s !important;
+}
+.nav-cta:hover { background:#ffd740 !important; transform:translateY(-1px); }
+
+
+/* ══════════════════════════════════════════════
+   HERO
+══════════════════════════════════════════════ */
+.hero {
+  position:relative;
+  min-height: 100vh;
+  display:flex; flex-direction:column; justify-content:center;
+  padding: 120px 80px 80px;
+  overflow:hidden;
+}
+
+/* Road grid background */
+.hero-grid {
+  position:absolute; inset:0; z-index:0;
+  background-image:
+    linear-gradient(rgba(245,197,24,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,197,24,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Diagonal road lines */
+.hero-road {
+  position:absolute; bottom:0; right:0;
+  width:55%; height:100%;
+  background: linear-gradient(135deg, transparent 40%, rgba(245,197,24,0.025) 40%,
+    rgba(245,197,24,0.025) 42%, transparent 42%,
+    transparent 55%, rgba(245,197,24,0.018) 55%,
+    rgba(245,197,24,0.018) 57%, transparent 57%);
+  z-index:0;
+}
+
+/* Glowing orb */
+.hero-orb {
+  position:absolute; top:-200px; right:-200px;
+  width:700px; height:700px;
+  background: radial-gradient(circle, rgba(245,197,24,0.06) 0%, transparent 65%);
+  z-index:0; pointer-events:none;
+}
+
+.hero-content { position:relative; z-index:1; max-width:700px; }
+
+.hero-eyebrow {
+  display:inline-flex; align-items:center; gap:10px;
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--gold); letter-spacing:3px;
+  border:1px solid rgba(245,197,24,0.3);
+  padding: 6px 14px; border-radius:2px;
+  margin-bottom: 28px;
+  background: rgba(245,197,24,0.05);
+  animation: fadeUp 0.8s var(--ease-out) both;
+}
+
+.hero-eyebrow::before {
+  content:''; width:6px; height:6px;
+  background:var(--gold); border-radius:50%;
+  animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:0.4; transform:scale(0.7); }
+}
+
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 9vw, 120px);
+  line-height: 0.92;
+  letter-spacing: 2px;
+  color: var(--white);
+  margin-bottom: 8px;
+  animation: fadeUp 0.9s var(--ease-out) 0.1s both;
+}
+
+.hero-headline .accent { color:var(--gold); }
+.hero-headline .outline {
+  -webkit-text-stroke: 2px var(--gold);
+  color: transparent;
+}
+
+.hero-sub {
+  font-size:18px; font-weight:400;
+  color:var(--dim); line-height:1.7;
+  max-width:520px; margin:24px 0 44px;
+  animation: fadeUp 0.9s var(--ease-out) 0.2s both;
+}
+
+.hero-sub strong { color:var(--white); font-weight:600; }
+
+.hero-actions {
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  animation: fadeUp 0.9s var(--ease-out) 0.3s both;
+}
+
+.btn-primary {
+  display:inline-flex; align-items:center; gap:10px;
+  padding:16px 36px;
+  background:var(--gold);
+  color:#000; font-family:var(--font-body);
+  font-weight:700; font-size:14px; letter-spacing:2px;
+  text-transform:uppercase; text-decoration:none;
+  border:none; cursor:pointer; border-radius:2px;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 0 40px rgba(245,197,24,0.15);
+}
+.btn-primary:hover {
+  background:#ffd740;
+  transform:translateY(-2px);
+  box-shadow: 0 8px 40px rgba(245,197,24,0.3);
+}
+
+.btn-secondary {
+  display:inline-flex; align-items:center; gap:10px;
+  padding:16px 36px;
+  background:transparent;
+  color:var(--white); font-family:var(--font-body);
+  font-weight:600; font-size:14px; letter-spacing:2px;
+  text-transform:uppercase; text-decoration:none;
+  border:1px solid var(--border2); cursor:pointer; border-radius:2px;
+  transition: border-color 0.2s, color 0.2s, transform 0.15s;
+}
+.btn-secondary:hover {
+  border-color:var(--white);
+  transform:translateY(-2px);
+}
+
+.hero-trust {
+  display:flex; align-items:center; gap:24px;
+  margin-top:44px;
+  animation: fadeUp 0.9s var(--ease-out) 0.4s both;
+}
+
+.hero-trust-item {
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--dim); letter-spacing:1px;
+}
+
+.hero-trust-dot {
+  width:6px; height:6px; border-radius:50%;
+}
+.hero-trust-dot.green  { background:var(--green); box-shadow:0 0 6px var(--green); }
+.hero-trust-dot.blue   { background:var(--blue);  box-shadow:0 0 6px var(--blue); }
+.hero-trust-dot.gold   { background:var(--gold);  box-shadow:0 0 6px var(--gold); }
+
+/* Floating mockup */
+.hero-mockup {
+  position:absolute; right:5%; top:50%; transform:translateY(-50%);
+  width:440px; z-index:1;
+  animation: floatIn 1.2s var(--ease-out) 0.5s both;
+}
+
+@keyframes floatIn {
+  from { opacity:0; transform:translateY(-40%) translateX(40px); }
+  to   { opacity:1; transform:translateY(-50%); }
+}
+
+.mockup-frame {
+  background: var(--card);
+  border:1px solid var(--border2);
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(245,197,24,0.1),
+    0 40px 80px rgba(0,0,0,0.6),
+    0 0 120px rgba(245,197,24,0.04);
+}
+
+.mockup-bar {
+  background: #0d0f14;
+  border-bottom:1px solid var(--border);
+  padding:10px 16px;
+  display:flex; align-items:center; gap:8px;
+}
+
+.mockup-dot {
+  width:10px; height:10px; border-radius:50%;
+}
+
+.mockup-title {
+  font-family:var(--font-mono); font-size:10px;
+  color:var(--gold); letter-spacing:2px; margin-left:8px;
+}
+
+.mockup-canvas {
+  background: #0d1520;
+  height:220px;
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap:2px;
+  padding:16px;
+  position:relative;
+}
+
+/* Animated road in mockup */
+.mockup-road {
+  grid-column:1/-1; grid-row:1/-1;
+  position:absolute; inset:0;
+  background: #0a1520;
+  overflow:hidden;
+}
+
+.road-lane {
+  position:absolute; bottom:0; left:50%;
+  width:3px; height:100%;
+  background: repeating-linear-gradient(
+    to top,
+    var(--gold) 0px, var(--gold) 18px,
+    transparent 18px, transparent 36px
+  );
+  transform:translateX(-50%) perspective(300px) rotateX(30deg);
+  transform-origin: bottom center;
+  opacity:0.4;
+  animation: roadScroll 1.2s linear infinite;
+}
+
+@keyframes roadScroll {
+  from { background-position: 0 0; }
+  to   { background-position: 0 -36px; }
+}
+
+.mockup-car {
+  position:absolute; bottom:20px; left:50%;
+  transform:translateX(-50%);
+  font-size:28px;
+  filter:drop-shadow(0 0 10px rgba(245,197,24,0.5));
+  animation: carBob 2s ease-in-out infinite;
+}
+
+@keyframes carBob {
+  0%,100% { transform:translateX(-50%) translateY(0); }
+  50%     { transform:translateX(-50%) translateY(-3px); }
+}
+
+.mockup-signs {
+  position:absolute; top:12px; right:12px;
+  display:flex; flex-direction:column; gap:4px;
+}
+
+.mockup-sign {
+  width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:bold;
+  border:2px solid;
+}
+.mockup-sign.red  { background:rgba(255,61,87,0.15); border-color:#ff3d57; color:#ff3d57; }
+.mockup-sign.blue { background:rgba(41,182,246,0.15); border-color:#29b6f6; color:#29b6f6; }
+
+.mockup-tl {
+  position:absolute; top:12px; left:12px;
+  display:flex; flex-direction:column; gap:3px;
+  background:rgba(0,0,0,0.5); border:1px solid var(--border); border-radius:4px;
+  padding:5px;
+}
+
+.tl-light {
+  width:10px; height:10px; border-radius:50%;
+  background:var(--muted);
+}
+.tl-light.on-red   { background:#ff3d57; box-shadow:0 0 8px #ff3d57; }
+.tl-light.on-amber { background:#f5c518; box-shadow:0 0 8px #f5c518; }
+.tl-light.on-green { background:#00e676; box-shadow:0 0 8px #00e676; }
+
+.mockup-stats {
+  background:var(--card);
+  border-top:1px solid var(--border);
+  padding:12px 16px;
+  display:flex; justify-content:space-between;
+}
+
+.mockup-stat {
+  text-align:center;
+}
+
+.mockup-stat-val {
+  font-family:var(--font-display);
+  font-size:22px; color:var(--gold); letter-spacing:1px;
+}
+
+.mockup-stat-label {
+  font-family:var(--font-mono); font-size:9px;
+  color:var(--dim); letter-spacing:1px;
+}
+
+
+/* ══════════════════════════════════════════════
+   STATS TICKER
+══════════════════════════════════════════════ */
+.ticker {
+  background:var(--gold);
+  padding:14px 0;
+  overflow:hidden;
+  position:relative; z-index:2;
+}
+
+.ticker-track {
+  display:flex; gap:0;
+  animation: ticker 30s linear infinite;
+  white-space:nowrap;
+}
+
+@keyframes ticker {
+  from { transform:translateX(0); }
+  to   { transform:translateX(-50%); }
+}
+
+.ticker-item {
+  display:inline-flex; align-items:center; gap:16px;
+  padding:0 40px;
+  font-family:var(--font-display);
+  font-size:16px; letter-spacing:2px; color:#000;
+}
+
+.ticker-sep {
+  color:rgba(0,0,0,0.3); font-size:20px;
+}
+
+
+/* ══════════════════════════════════════════════
+   SECTION SHARED
+══════════════════════════════════════════════ */
+section {
+  position:relative; z-index:1;
+  padding:100px 80px;
+}
+
+.section-label {
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--gold); letter-spacing:4px;
+  text-transform:uppercase; margin-bottom:16px;
+  display:flex; align-items:center; gap:12px;
+}
+
+.section-label::before {
+  content:''; width:30px; height:1px; background:var(--gold);
+}
+
+.section-title {
+  font-family:var(--font-display);
+  font-size:clamp(42px, 5vw, 68px);
+  line-height:1; letter-spacing:2px;
+  margin-bottom:16px;
+}
+
+.section-sub {
+  font-size:16px; color:var(--dim);
+  max-width:520px; line-height:1.7;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(30px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.reveal {
+  opacity:0; transform:translateY(40px);
+  transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+}
+.reveal.visible { opacity:1; transform:translateY(0); }
+.reveal.delay-1 { transition-delay:0.1s; }
+.reveal.delay-2 { transition-delay:0.2s; }
+.reveal.delay-3 { transition-delay:0.3s; }
+.reveal.delay-4 { transition-delay:0.4s; }
+
+
+/* ══════════════════════════════════════════════
+   FEATURES
+══════════════════════════════════════════════ */
+#features { background:var(--surface); }
+
+.features-header {
+  display:flex; justify-content:space-between; align-items:flex-end;
+  margin-bottom:64px; flex-wrap:wrap; gap:24px;
+}
+
+.features-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+  gap:2px;
+}
+
+.feature-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:40px 36px;
+  position:relative;
+  overflow:hidden;
+  transition:border-color 0.3s, transform 0.3s;
+  cursor:default;
+}
+
+.feature-card::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0;
+  height:2px;
+  background:linear-gradient(90deg, transparent, var(--accent-color, var(--gold)), transparent);
+  opacity:0; transition:opacity 0.3s;
+}
+
+.feature-card:hover {
+  border-color:var(--accent-color, var(--gold));
+  transform:translateY(-4px);
+}
+.feature-card:hover::before { opacity:1; }
+
+.feature-card[data-accent="green"] { --accent-color:var(--green); }
+.feature-card[data-accent="blue"]  { --accent-color:var(--blue); }
+.feature-card[data-accent="red"]   { --accent-color:var(--red); }
+.feature-card[data-accent="gold"]  { --accent-color:var(--gold); }
+
+.feature-icon {
+  width:52px; height:52px;
+  background:rgba(245,197,24,0.06);
+  border:1px solid rgba(245,197,24,0.15);
+  border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; margin-bottom:24px;
+  transition:background 0.3s, border-color 0.3s;
+}
+
+.feature-card[data-accent="green"] .feature-icon {
+  background:rgba(0,230,118,0.06); border-color:rgba(0,230,118,0.15);
+}
+.feature-card[data-accent="blue"] .feature-icon {
+  background:rgba(41,182,246,0.06); border-color:rgba(41,182,246,0.15);
+}
+.feature-card[data-accent="red"] .feature-icon {
+  background:rgba(255,61,87,0.06); border-color:rgba(255,61,87,0.15);
+}
+
+.feature-title {
+  font-family:var(--font-display);
+  font-size:28px; letter-spacing:1px; color:var(--white);
+  margin-bottom:12px;
+}
+
+.feature-desc {
+  font-size:14px; color:var(--dim); line-height:1.8;
+}
+
+.feature-tag {
+  display:inline-block;
+  margin-top:20px;
+  font-family:var(--font-mono); font-size:10px;
+  letter-spacing:2px; color:var(--accent-color, var(--gold));
+  border:1px solid currentColor;
+  padding:4px 10px; border-radius:2px;
+  opacity:0.7;
+}
+
+.feature-bg-num {
+  position:absolute; bottom:-20px; right:16px;
+  font-family:var(--font-display);
+  font-size:120px; color:rgba(255,255,255,0.02);
+  line-height:1; pointer-events:none; user-select:none;
+}
+
+
+/* ══════════════════════════════════════════════
+   HOW IT WORKS
+══════════════════════════════════════════════ */
+#how {
+  background:var(--bg);
+}
+
+.how-layout {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:80px;
+  align-items:center;
+  margin-top:64px;
+}
+
+.how-steps { display:flex; flex-direction:column; gap:0; }
+
+.how-step {
+  display:flex; gap:28px; align-items:flex-start;
+  padding:32px 0;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+
+.how-step:last-child { border-bottom:none; }
+
+.step-num {
+  font-family:var(--font-display);
+  font-size:56px; line-height:1;
+  color:var(--muted);
+  min-width:60px; text-align:right;
+  transition: color 0.3s;
+}
+
+.how-step:hover .step-num { color:var(--gold); }
+
+.step-content {}
+
+.step-title {
+  font-family:var(--font-display);
+  font-size:26px; letter-spacing:1px; color:var(--white);
+  margin-bottom:10px;
+}
+
+.step-desc {
+  font-size:14px; color:var(--dim); line-height:1.8;
+}
+
+.step-action {
+  display:inline-flex; align-items:center; gap:6px;
+  margin-top:14px;
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--gold); letter-spacing:1px;
+}
+
+/* Phone visual */
+.how-visual {
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.phone-shell {
+  width:260px;
+  background:var(--card);
+  border:1.5px solid var(--border2);
+  border-radius:32px;
+  overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(245,197,24,0.08),
+    0 60px 100px rgba(0,0,0,0.5);
+  position:relative;
+}
+
+.phone-notch {
+  height:28px; background:#080a0f;
+  border-radius:0 0 16px 16px;
+  width:100px; margin:0 auto;
+}
+
+.phone-screen {
+  background:var(--bg);
+  padding:16px 12px 20px;
+}
+
+.phone-header {
+  background:#0d0f14;
+  border-radius:6px;
+  padding:10px 12px;
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:8px;
+  border:1px solid var(--border);
+}
+
+.phone-logo-hex {
+  width:22px; height:22px;
+  background:var(--gold);
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex; align-items:center; justify-content:center;
+  font-size:7px; font-weight:bold; color:#000;
+}
+
+.phone-header-text {
+  font-family:var(--font-mono); font-size:8px;
+  color:var(--gold); letter-spacing:1px;
+}
+
+.phone-quiz-q {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:6px; padding:12px;
+  margin-bottom:8px;
+}
+
+.phone-quiz-q .q-label {
+  font-family:var(--font-mono); font-size:8px;
+  color:var(--dim); margin-bottom:6px; letter-spacing:1px;
+}
+
+.phone-quiz-q .q-text {
+  font-size:10px; color:var(--white); line-height:1.6;
+}
+
+.phone-options { display:flex; flex-direction:column; gap:4px; }
+
+.phone-option {
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  font-size:9px; color:var(--dim);
+  display:flex; align-items:center; gap:6px;
+}
+
+.phone-option.correct {
+  border-color:var(--green);
+  background:rgba(0,230,118,0.06);
+  color:var(--green);
+}
+
+.phone-option .opt-letter {
+  width:14px; height:14px; border-radius:50%;
+  border:1px solid currentColor;
+  display:flex; align-items:center; justify-content:center;
+  font-size:7px; flex-shrink:0;
+}
+
+.phone-progress {
+  height:3px;
+  background:var(--border);
+  border-radius:3px;
+  margin-top:10px; overflow:hidden;
+}
+
+.phone-progress-bar {
+  height:100%;
+  background:linear-gradient(90deg, var(--gold), var(--green));
+  border-radius:3px;
+  width:45%;
+  animation: progressAnim 3s ease-in-out infinite alternate;
+}
+
+@keyframes progressAnim {
+  from { width:20%; }
+  to   { width:80%; }
+}
+
+.phone-bottom-nav {
+  display:flex; justify-content:space-around;
+  padding:12px 0 4px;
+  border-top:1px solid var(--border);
+  margin-top:10px;
+}
+
+.phone-nav-item {
+  font-size:16px; opacity:0.4; cursor:pointer;
+  transition:opacity 0.2s;
+}
+.phone-nav-item.active { opacity:1; }
+
+/* Floating badge */
+.how-badge {
+  position:absolute; right:-20px; top:60px;
+  background:var(--gold);
+  color:#000; border-radius:4px;
+  padding:10px 16px; text-align:center;
+  box-shadow:0 8px 32px rgba(245,197,24,0.3);
+  animation:badgePop 3s ease-in-out infinite;
+}
+
+@keyframes badgePop {
+  0%,100% { transform:translateY(0) rotate(2deg); }
+  50%     { transform:translateY(-6px) rotate(2deg); }
+}
+
+.how-badge-num {
+  font-family:var(--font-display);
+  font-size:28px; line-height:1;
+}
+.how-badge-label {
+  font-family:var(--font-mono);
+  font-size:9px; letter-spacing:1px;
+  margin-top:2px;
+}
+
+
+/* ══════════════════════════════════════════════
+   STATS
+══════════════════════════════════════════════ */
+#stats {
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+
+.stats-grid {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1px;
+  background:var(--border);
+  border:1px solid var(--border);
+}
+
+.stat-cell {
+  background:var(--card);
+  padding:48px 36px;
+  text-align:center;
+  position:relative; overflow:hidden;
+  transition:background 0.3s;
+}
+.stat-cell:hover { background:#161b28; }
+
+.stat-cell::after {
+  content:''; position:absolute;
+  bottom:0; left:50%; transform:translateX(-50%);
+  width:0; height:2px;
+  background:var(--gold);
+  transition:width 0.4s;
+}
+.stat-cell:hover::after { width:60%; }
+
+.stat-val {
+  font-family:var(--font-display);
+  font-size:clamp(48px, 5vw, 72px);
+  color:var(--gold); line-height:1;
+  letter-spacing:1px;
+}
+
+.stat-unit {
+  font-family:var(--font-display);
+  font-size:32px; color:var(--gold2);
+}
+
+.stat-label {
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--dim); letter-spacing:3px;
+  margin-top:10px; text-transform:uppercase;
+}
+
+
+/* ══════════════════════════════════════════════
+   PRICING
+══════════════════════════════════════════════ */
+#pricing { background:var(--bg); }
+
+.pricing-header {
+  text-align:center; margin-bottom:64px;
+}
+.pricing-header .section-label { justify-content:center; }
+.pricing-header .section-label::before { display:none; }
+
+.pricing-grid {
+  display:grid;
+  grid-template-columns: repeat(3,1fr);
+  gap:2px;
+  max-width:960px; margin:0 auto;
+}
+
+.price-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:40px 32px;
+  position:relative;
+  transition:transform 0.3s, border-color 0.3s;
+}
+.price-card:hover { transform:translateY(-6px); }
+
+.price-card.featured {
+  border-color:var(--gold);
+  background:linear-gradient(160deg, #16181f, #1a1c24);
+  transform:scale(1.04);
+  z-index:2;
+}
+
+.price-card.featured::before {
+  content:'MOST POPULAR';
+  position:absolute; top:-1px; left:50%; transform:translateX(-50%);
+  background:var(--gold); color:#000;
+  font-family:var(--font-mono); font-size:9px; font-weight:bold;
+  letter-spacing:2px; padding:4px 16px;
+}
+
+.price-plan {
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--dim); letter-spacing:3px; text-transform:uppercase;
+  margin-bottom:16px;
+}
+
+.price-amount {
+  display:flex; align-items:flex-start; gap:4px;
+  margin-bottom:8px;
+}
+
+.price-currency {
+  font-family:var(--font-display);
+  font-size:24px; color:var(--dim);
+  margin-top:8px;
+}
+
+.price-num {
+  font-family:var(--font-display);
+  font-size:72px; line-height:1;
+  color:var(--white);
+  letter-spacing:-1px;
+}
+
+.price-card.featured .price-num { color:var(--gold); }
+
+.price-period {
+  font-family:var(--font-mono); font-size:10px;
+  color:var(--dim); letter-spacing:1px;
+  margin-bottom:32px; padding-top:4px;
+}
+
+.price-features {
+  list-style:none; margin-bottom:36px;
+  display:flex; flex-direction:column; gap:12px;
+}
+
+.price-features li {
+  display:flex; align-items:center; gap:10px;
+  font-size:13px; color:var(--dim); line-height:1.4;
+}
+
+.price-features li::before {
+  content:'✓'; color:var(--green);
+  font-weight:bold; flex-shrink:0;
+}
+
+.price-features li.muted::before { content:'—'; color:var(--muted); }
+.price-features li.muted { opacity:0.5; }
+
+.btn-plan {
+  display:block; width:100%;
+  padding:14px; text-align:center;
+  font-family:var(--font-body); font-size:13px;
+  font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  text-decoration:none; cursor:pointer; border-radius:2px;
+  transition:all 0.2s;
+}
+
+.btn-plan-outline {
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--white);
+}
+.btn-plan-outline:hover { border-color:var(--white); }
+
+.btn-plan-gold {
+  background:var(--gold);
+  border:none; color:#000;
+  box-shadow:0 0 30px rgba(245,197,24,0.2);
+}
+.btn-plan-gold:hover { background:#ffd740; box-shadow:0 4px 30px rgba(245,197,24,0.4); }
+
+.mpesa-note {
+  text-align:center; margin-top:32px;
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--dim); letter-spacing:1px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+
+.mpesa-badge {
+  display:inline-block;
+  background:#4caf50; color:#fff;
+  font-family:var(--font-display);
+  font-size:14px; letter-spacing:1px;
+  padding:3px 10px; border-radius:3px;
+}
+
+
+/* ══════════════════════════════════════════════
+   TESTIMONIALS
+══════════════════════════════════════════════ */
+#testimonials {
+  background:var(--surface);
+}
+
+.testi-header { margin-bottom:56px; }
+
+.testi-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:2px;
+}
+
+.testi-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:36px 32px;
+  transition:border-color 0.3s, transform 0.3s;
+}
+.testi-card:hover { border-color:var(--gold); transform:translateY(-3px); }
+
+.testi-quote {
+  font-size:14px; color:var(--white);
+  line-height:1.9; margin-bottom:28px;
+  position:relative; padding-top:16px;
+}
+
+.testi-quote::before {
+  content:'"';
+  position:absolute; top:-8px; left:-4px;
+  font-family:var(--font-display);
+  font-size:64px; color:var(--gold);
+  opacity:0.2; line-height:1;
+}
+
+.testi-author {
+  display:flex; align-items:center; gap:14px;
+}
+
+.testi-avatar {
+  width:40px; height:40px; border-radius:50%;
+  background:linear-gradient(135deg, var(--gold), var(--gold2));
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display);
+  font-size:18px; color:#000;
+  flex-shrink:0;
+}
+
+.testi-name {
+  font-weight:700; font-size:13px; color:var(--white);
+}
+
+.testi-role {
+  font-family:var(--font-mono); font-size:10px;
+  color:var(--dim); letter-spacing:1px;
+  margin-top:2px;
+}
+
+.testi-stars {
+  font-size:12px; color:var(--gold);
+  margin-bottom:16px; letter-spacing:2px;
+}
+
+
+/* ══════════════════════════════════════════════
+   CTA BAND
+══════════════════════════════════════════════ */
+#cta {
+  background:var(--gold);
+  padding:80px;
+  text-align:center;
+  position:relative; overflow:hidden;
+}
+
+#cta::before {
+  content:'';
+  position:absolute; inset:0;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent, transparent 20px,
+      rgba(0,0,0,0.03) 20px, rgba(0,0,0,0.03) 40px
+    );
+}
+
+.cta-inner { position:relative; z-index:1; }
+
+.cta-title {
+  font-family:var(--font-display);
+  font-size:clamp(48px, 6vw, 80px);
+  line-height:0.95; letter-spacing:2px;
+  color:#000; margin-bottom:20px;
+}
+
+.cta-sub {
+  font-size:16px; color:rgba(0,0,0,0.6);
+  margin-bottom:40px; max-width:500px; margin-left:auto; margin-right:auto;
+}
+
+.btn-dark {
+  display:inline-flex; align-items:center; gap:10px;
+  padding:18px 44px;
+  background:#000; color:var(--gold);
+  font-family:var(--font-body); font-weight:700;
+  font-size:14px; letter-spacing:2px; text-transform:uppercase;
+  text-decoration:none; border:none; cursor:pointer; border-radius:2px;
+  transition:background 0.2s, transform 0.15s;
+  box-shadow:0 8px 30px rgba(0,0,0,0.3);
+}
+.btn-dark:hover { background:#111; transform:translateY(-2px); }
+
+.cta-guarantee {
+  margin-top:24px;
+  font-family:var(--font-mono); font-size:11px;
+  color:rgba(0,0,0,0.5); letter-spacing:1px;
+}
+
+
+/* ══════════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════════ */
+footer {
+  background:var(--bg);
+  border-top:1px solid var(--border);
+  padding:60px 80px 36px;
+}
+
+.footer-top {
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:60px; margin-bottom:48px;
+}
+
+.footer-brand {}
+
+.footer-logo-row {
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:16px;
+}
+
+.footer-brand-desc {
+  font-size:13px; color:var(--dim); line-height:1.8;
+  max-width:260px;
+}
+
+.footer-col-title {
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--gold); letter-spacing:3px; text-transform:uppercase;
+  margin-bottom:20px;
+}
+
+.footer-links-list {
+  list-style:none; display:flex; flex-direction:column; gap:10px;
+}
+
+.footer-links-list a {
+  font-size:13px; color:var(--dim);
+  text-decoration:none; transition:color 0.2s;
+}
+.footer-links-list a:hover { color:var(--white); }
+
+.footer-bottom {
+  border-top:1px solid var(--border);
+  padding-top:28px;
+  display:flex; justify-content:space-between; align-items:center;
+  flex-wrap:wrap; gap:12px;
+}
+
+.footer-copy {
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--muted); letter-spacing:1px;
+}
+
+.footer-powered {
+  font-family:var(--font-mono); font-size:11px;
+  color:var(--muted); letter-spacing:1px;
+}
+
+.footer-powered a {
+  color:var(--gold); text-decoration:none;
+}
+
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════ */
+@media (max-width:1100px) {
+  .hero-mockup { display:none; }
+  .how-layout { grid-template-columns:1fr; }
+  .how-visual { display:none; }
+}
+
+@media (max-width:800px) {
+  nav { padding:0 20px; }
+  .nav-links { display:none; }
+  section { padding:64px 24px; }
+  .hero { padding:100px 24px 60px; }
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .pricing-grid { grid-template-columns:1fr; }
+  .price-card.featured { transform:none; }
+  .testi-grid { grid-template-columns:1fr; }
+  .footer-top { grid-template-columns:1fr 1fr; gap:36px; }
+  #cta { padding:60px 24px; }
+  footer { padding:48px 24px 28px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAVIGATION ══ -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-badge">MTB</div>
+    <span class="nav-title">SIMULATOR</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#testimonials">Reviews</a></li>
+    <li><a href="index.html" class="nav-cta">LAUNCH APP</a></li>
+  </ul>
+</nav>
+
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-road"></div>
+  <div class="hero-orb"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">NTSA KENYA — OFFICIAL TEST PREP</div>
+
+    <h1 class="hero-headline">
+      PASS YOUR<br>
+      <span class="accent">DRIVING</span><br>
+      <span class="outline">TEST</span>
+    </h1>
+
+    <p class="hero-sub">
+      Kenya's most complete NTSA theory test prep tool.
+      <strong>Interactive simulator, 200+ road signs, 62 Q&amp;A</strong> and
+      timed mock exams — all offline-ready on any device.
+    </p>
+
+    <div class="hero-actions">
+      <button onclick="openPayModal('trial')" class="btn-primary">
+        🚗 &nbsp;START FREE TRIAL
+      </button>
+      <a href="#features" class="btn-secondary">
+        SEE FEATURES →
+      </a>
+    </div>
+
+    <div class="hero-trust">
+      <div class="hero-trust-item">
+        <span class="hero-trust-dot green"></span>
+        WORKS OFFLINE
+      </div>
+      <div class="hero-trust-item">
+        <span class="hero-trust-dot blue"></span>
+        NO DOWNLOAD NEEDED
+      </div>
+      <div class="hero-trust-item">
+        <span class="hero-trust-dot gold"></span>
+        M-PESA PAYMENTS
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating mockup -->
+  <div class="hero-mockup">
+    <div class="mockup-frame">
+      <div class="mockup-bar">
+        <div class="mockup-dot" style="background:#ff3d57;"></div>
+        <div class="mockup-dot" style="background:#f5c518;"></div>
+        <div class="mockup-dot" style="background:#00e676;"></div>
+        <span class="mockup-title">MTB SIMULATOR — LIVE</span>
+      </div>
+      <div class="mockup-canvas">
+        <div class="mockup-road">
+          <div class="road-lane"></div>
+          <div class="mockup-tl">
+            <div class="tl-light on-red"></div>
+            <div class="tl-light"></div>
+            <div class="tl-light"></div>
+          </div>
+          <div class="mockup-signs">
+            <div class="mockup-sign red">30</div>
+            <div class="mockup-sign blue">→</div>
+          </div>
+          <div class="mockup-car">🚗</div>
+        </div>
+      </div>
+      <div class="mockup-stats">
+        <div class="mockup-stat">
+          <div class="mockup-stat-val">62</div>
+          <div class="mockup-stat-label">Q&amp;A</div>
+        </div>
+        <div class="mockup-stat">
+          <div class="mockup-stat-val">200+</div>
+          <div class="mockup-stat-label">SIGNS</div>
+        </div>
+        <div class="mockup-stat">
+          <div class="mockup-stat-val">4</div>
+          <div class="mockup-stat-label">MODES</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ TICKER ══ -->
+<div class="ticker">
+  <div class="ticker-track" id="ticker">
+    <!-- duplicated for seamless loop -->
+  </div>
+</div>
+
+
+<!-- ══ FEATURES ══ -->
+<section id="features">
+  <div class="features-header reveal">
+    <div>
+      <div class="section-label">WHAT YOU GET</div>
+      <h2 class="section-title">FOUR TOOLS.<br>ONE PASS.</h2>
+    </div>
+    <p class="section-sub" style="max-width:320px;">Everything you need to walk into the NTSA test room confident and ready.</p>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-card reveal delay-1" data-accent="gold">
+      <div class="feature-icon">🚗</div>
+      <div class="feature-title">DRIVING SIMULATOR</div>
+      <p class="feature-desc">Drive a real top-down town map with working traffic lights, multiple vehicle types, pedestrian crossings and roundabouts. Build muscle memory for test situations.</p>
+      <span class="feature-tag">INTERACTIVE · CANVAS</span>
+      <div class="feature-bg-num">01</div>
+    </div>
+
+    <div class="feature-card reveal delay-2" data-accent="blue">
+      <div class="feature-icon">🛣️</div>
+      <div class="feature-title">ROAD SIGNS LIBRARY</div>
+      <p class="feature-desc">Every official Kenya Traffic Act sign — Warning, Mandatory, Prohibitory, Priority and Informatory — with descriptions, image references and legal meanings.</p>
+      <span class="feature-tag">200+ SIGNS · 5 CATEGORIES</span>
+      <div class="feature-bg-num">02</div>
+    </div>
+
+    <div class="feature-card reveal delay-3" data-accent="green">
+      <div class="feature-icon">📖</div>
+      <div class="feature-title">THEORY Q&amp;A</div>
+      <p class="feature-desc">62 official NTSA-style questions covering overtaking, parking, lights, safety, vehicle rules and Model Town. Filter by topic, search by keyword. Read aloud with TTS.</p>
+      <span class="feature-tag">62 QUESTIONS · TTS AUDIO</span>
+      <div class="feature-bg-num">03</div>
+    </div>
+
+    <div class="feature-card reveal delay-4" data-accent="red">
+      <div class="feature-icon">📝</div>
+      <div class="feature-title">TIMED MOCK QUIZ</div>
+      <p class="feature-desc">Shuffle questions by topic or take a full mixed test. Instant feedback, score tracking and a detailed answer review — with a grade of Pass, Merit or Distinction.</p>
+      <span class="feature-tag">SCORED · REVIEWED · SHUFFLED</span>
+      <div class="feature-bg-num">04</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ STATS ══ -->
+<section id="stats">
+  <div class="stats-grid">
+    <div class="stat-cell reveal">
+      <div class="stat-val"><span class="counter" data-target="500">0</span><span class="stat-unit">K+</span></div>
+      <div class="stat-label">Kenyan drivers tested yearly</div>
+    </div>
+    <div class="stat-cell reveal delay-1">
+      <div class="stat-val"><span class="counter" data-target="200">0</span><span class="stat-unit">+</span></div>
+      <div class="stat-label">Road signs covered</div>
+    </div>
+    <div class="stat-cell reveal delay-2">
+      <div class="stat-val"><span class="counter" data-target="62">0</span></div>
+      <div class="stat-label">Official Q&amp;A questions</div>
+    </div>
+    <div class="stat-cell reveal delay-3">
+      <div class="stat-val"><span class="counter" data-target="100">0</span><span class="stat-unit">%</span></div>
+      <div class="stat-label">Offline — no internet needed</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ HOW IT WORKS ══ -->
+<section id="how">
+  <div class="how-layout">
+    <div>
+      <div class="section-label reveal">HOW IT WORKS</div>
+      <h2 class="section-title reveal">READY IN<br>3 MINUTES.</h2>
+      <p class="section-sub reveal" style="margin-bottom:0;">No app store. No installation. Works on any phone, tablet or computer — even without internet once loaded.</p>
+
+      <div class="how-steps" style="margin-top:40px;">
+        <div class="how-step reveal delay-1">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <div class="step-title">OPEN IN YOUR BROWSER</div>
+            <p class="step-desc">Visit the link on any device. Tap "Add to Home Screen" to install as an app — no Play Store or App Store required.</p>
+            <span class="step-action">Works on Android · iPhone · Desktop →</span>
+          </div>
+        </div>
+
+        <div class="how-step reveal delay-2">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <div class="step-title">PAY VIA M-PESA</div>
+            <p class="step-desc">Select your plan. Pay instantly with M-Pesa — you'll receive access within seconds. KES 150 for 30 days of full access.</p>
+            <span class="step-action">STK Push · No card needed →</span>
+          </div>
+        </div>
+
+        <div class="how-step reveal delay-3">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <div class="step-title">STUDY &amp; PASS</div>
+            <p class="step-desc">Drive the simulator, learn all road signs, quiz yourself daily. Most students are test-ready within one week of daily practice.</p>
+            <span class="step-action">Average prep time: 5–7 days →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-visual reveal delay-2">
+      <div class="phone-shell">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-header">
+            <div class="phone-logo-hex">MTB</div>
+            <span class="phone-header-text">THEORY QUIZ · Q 7/20</span>
+          </div>
+
+          <div class="phone-quiz-q">
+            <div class="q-label">ROAD RULES</div>
+            <div class="q-text">At a junction with no signs, who has priority?</div>
+          </div>
+
+          <div class="phone-options">
+            <div class="phone-option">
+              <span class="opt-letter">A</span>
+              The vehicle on the left
+            </div>
+            <div class="phone-option correct">
+              <span class="opt-letter">B</span>
+              ✓ The vehicle on the right
+            </div>
+            <div class="phone-option">
+              <span class="opt-letter">C</span>
+              The larger vehicle
+            </div>
+            <div class="phone-option">
+              <span class="opt-letter">D</span>
+              Whichever arrived first
+            </div>
+          </div>
+
+          <div class="phone-progress">
+            <div class="phone-progress-bar"></div>
+          </div>
+
+          <div class="phone-bottom-nav">
+            <div class="phone-nav-item">🚗</div>
+            <div class="phone-nav-item">🛣️</div>
+            <div class="phone-nav-item active">📝</div>
+            <div class="phone-nav-item">📖</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="how-badge">
+        <div class="how-badge-num">87%</div>
+        <div class="how-badge-label">PASS RATE</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ PRICING ══ -->
+<section id="pricing">
+  <div class="pricing-header reveal">
+    <div class="section-label">PRICING</div>
+    <h2 class="section-title">SIMPLE.<br>AFFORDABLE.</h2>
+    <p class="section-sub" style="margin:0 auto;">Pay only when you need it. No subscriptions, no hidden fees. Cancel anytime.</p>
+  </div>
+
+  <div class="pricing-grid">
+
+    <!-- Free -->
+    <div class="price-card reveal delay-1">
+      <div class="price-plan">FREE TRIAL</div>
+      <div class="price-amount">
+        <span class="price-currency">KES</span>
+        <span class="price-num">0</span>
+      </div>
+      <div class="price-period">3 DAYS · NO CARD NEEDED</div>
+
+      <ul class="price-features">
+        <li>Full driving simulator</li>
+        <li>10 road signs preview</li>
+        <li>5 sample quiz questions</li>
+        <li class="muted">All 62 Q&amp;A</li>
+        <li class="muted">200+ road signs</li>
+        <li class="muted">Timed mock exams</li>
+        <li class="muted">TTS audio reading</li>
+      </ul>
+      <a href="index.html" class="btn-plan btn-plan-outline">START FREE →</a>
+    </div>
+
+    <!-- 30-day -->
+    <div class="price-card featured reveal delay-2">
+      <div class="price-plan">30 DAYS ACCESS</div>
+      <div class="price-amount">
+        <span class="price-currency">KES</span>
+        <span class="price-num">150</span>
+      </div>
+      <div class="price-period">ONE-TIME PAYMENT · M-PESA</div>
+
+      <ul class="price-features">
+        <li>Full driving simulator</li>
+        <li>All 200+ road signs</li>
+        <li>All 62 Q&amp;A questions</li>
+        <li>Unlimited mock exams</li>
+        <li>TTS audio reading</li>
+        <li>Topic filter &amp; search</li>
+        <li>Full offline access</li>
+      </ul>
+      <button onclick="openPayModal('30day')" class="btn-plan btn-plan-gold">PAY KES 150 →</button>
+    </div>
+
+    <!-- School -->
+    <div class="price-card reveal delay-3">
+      <div class="price-plan">SCHOOL LICENCE</div>
+      <div class="price-amount">
+        <span class="price-currency">KES</span>
+        <span class="price-num">5K</span>
+      </div>
+      <div class="price-period">PER MONTH · UP TO 50 STUDENTS</div>
+
+      <ul class="price-features">
+        <li>Everything in 30-day plan</li>
+        <li>Custom school branding</li>
+        <li>Shared student access</li>
+        <li>Progress dashboard</li>
+        <li>WhatsApp support</li>
+        <li>Monthly invoicing</li>
+        <li>Free onboarding session</li>
+      </ul>
+      <a href="/cdn-cgi/l/email-protection#a5cccbc3cae5c3d7c4c8d2c4cec4d0c9d1d7c4d1c0c6cd8bc6cac89ad6d0c7cfc0c6d198f6c6cdcacac9809795e9ccc6c0cbc6c0809795e0cbd4d0ccd7dc" class="btn-plan btn-plan-outline">CONTACT US →</a>
+    </div>
+
+  </div>
+
+  <div class="mpesa-note reveal">
+    <span class="mpesa-badge">M-PESA</span>
+    Payments powered by Safaricom M-Pesa · Instant STK Push · No card required
+  </div>
+</section>
+
+
+<!-- ══ TESTIMONIALS ══ -->
+<section id="testimonials">
+  <div class="testi-header reveal">
+    <div class="section-label">WHAT STUDENTS SAY</div>
+    <h2 class="section-title">REAL RESULTS.</h2>
+  </div>
+
+  <div class="testi-grid">
+    <div class="testi-card reveal delay-1">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">I failed the NTSA theory test twice before finding this. The road signs library and the quiz mode helped me understand what I was missing. Passed third time — first time using MTB Simulator.</p>
+      <div class="testi-author">
+        <div class="testi-avatar">JM</div>
+        <div>
+          <div class="testi-name">James M.</div>
+          <div class="testi-role">NAIROBI · PRIVATE DRIVER</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testi-card reveal delay-2">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">I run a small driving school in Kisumu. All my students use this now instead of printed handouts. The simulator keeps them engaged, and the quiz scores show me who needs extra attention.</p>
+      <div class="testi-author">
+        <div class="testi-avatar">FO</div>
+        <div>
+          <div class="testi-name">Francis O.</div>
+          <div class="testi-role">KISUMU · DRIVING SCHOOL OWNER</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testi-card reveal delay-3">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">I love that it works on my phone without internet. I studied on the matatu every morning for a week. The TTS feature reads the questions out loud — perfect for commuting. Passed on my first attempt.</p>
+      <div class="testi-author">
+        <div class="testi-avatar">AW</div>
+        <div>
+          <div class="testi-name">Amina W.</div>
+          <div class="testi-role">MOMBASA · RECENT GRADUATE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ CTA BAND ══ -->
+<section id="cta">
+  <div class="cta-inner">
+    <h2 class="cta-title">READY TO<br>PASS?</h2>
+    <p class="cta-sub">Join thousands of Kenyan drivers who prepared smarter. Start your free 3-day trial now — no payment needed.</p>
+    <button onclick="openPayModal('trial')" class="btn-dark">
+      🚗 &nbsp;START FREE TRIAL NOW
+    </button>
+    <div class="cta-guarantee">✓ 3 days free &nbsp;·&nbsp; ✓ No card &nbsp;·&nbsp; ✓ Works offline &nbsp;·&nbsp; ✓ Cancel anytime</div>
+  </div>
+</section>
+
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo-row">
+        <div class="nav-badge">MTB</div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:18px;letter-spacing:2px;color:var(--gold);">MTB SIMULATOR</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--dim);letter-spacing:1px;">BY FRAMWAKA ULTRATECH</div>
+        </div>
+      </div>
+      <p class="footer-brand-desc">Kenya's most complete NTSA theory test prep platform. Built for drivers, by Framwaka Ultratech Limited.</p>
+    </div>
+
+    <div>
+      <div class="footer-col-title">APP</div>
+      <ul class="footer-links-list">
+        <li><a href="index.html">Launch Simulator</a></li>
+        <li><a href="index.html#page-signs">Road Signs</a></li>
+        <li><a href="index.html#page-general">Q&amp;A</a></li>
+        <li><a href="index.html#page-quiz">Take Quiz</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer-col-title">RESOURCES</div>
+      <ul class="footer-links-list">
+        <li><a href="#">NTSA Official Site</a></li>
+        <li><a href="#">Kenya Traffic Act</a></li>
+        <li><a href="#">Highway Code</a></li>
+        <li><a href="#">Test Centres</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="footer-col-title">CONTACT</div>
+      <ul class="footer-links-list">
+        <li><a href="/cdn-cgi/l/email-protection#ddb4b3bbb29dbbafbcb0aabcb6bca8b1a9afbca9b8beb5f3beb2b0">Email Us</a></li>
+        <li><a href="https://framwakaultratech.lovable.app/">Website</a></li>
+        <li><a href="#">WhatsApp</a></li>
+        <li><a href="#">School Licences</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <span class="footer-copy">© 2025 FRAMWAKA ULTRATECH LIMITED · ALL RIGHTS RESERVED</span>
+    <span class="footer-powered">Powered by <a href="https://framwakaultratech.lovable.app/">Framwaka Ultratech</a></span>
+  </div>
+</footer>
+
+
+<!-- ══ SCRIPTS ══ -->
+
+<!-- ══ SCRIPTS ══ -->
+<script>
+/* ── Ticker setup ── */
+(function(){
+  const items = [
+    '🚗  NTSA THEORY TEST PREP',
+    '🛣️  200+ OFFICIAL ROAD SIGNS',
+    '📝  62 Q&A QUESTIONS',
+    '🚦  INTERACTIVE SIMULATOR',
+    '📱  WORKS OFFLINE',
+    '💚  M-PESA PAYMENTS',
+    '⭐  PASS FIRST TIME',
+    '🇰🇪  KENYA HIGHWAY CODE',
+  ];
+  const track = document.getElementById('ticker');
+  const html = items.map(i =>
+    `<span class="ticker-item">${i}<span class="ticker-sep"> · </span></span>`
+  ).join('');
+  track.innerHTML = html + html;
+})();
+
+/* ── Scroll reveal ── */
+(function(){
+  const els = document.querySelectorAll('.reveal');
+  const io  = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(el => io.observe(el));
+})();
+
+/* ── Animated counters ── */
+(function(){
+  const counters = document.querySelectorAll('.counter');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(!e.isIntersecting) return;
+      const el = e.target, target = +el.dataset.target, dur = 1600, start = performance.now();
+      function update(now){
+        const t = Math.min((now-start)/dur,1), ease = 1-Math.pow(1-t,3);
+        el.textContent = Math.round(ease*target);
+        if(t<1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+      io.unobserve(el);
+    });
+  },{ threshold:0.5 });
+  counters.forEach(c=>io.observe(c));
+})();
+
+/* ── Traffic light cycle ── */
+(function(){
+  const states=[['on-red',null,null],['on-red','on-amber',null],[null,null,'on-green'],[null,'on-amber',null]];
+  let s=0;
+  setInterval(()=>{
+    s=(s+1)%states.length;
+    const ls=document.querySelectorAll('.mockup-tl .tl-light');
+    ls.forEach((l,i)=>{ l.className='tl-light'; if(states[s][i]) l.classList.add(states[s][i]); });
+  },1800);
+})();
+
+/* ════════════════════════════════════════════════
+   PAYMENT MODAL
+════════════════════════════════════════════════ */
+const API = '';  // '' = same origin; change if backend is on a different domain
+
+function openPayModal(plan){
+  document.getElementById('pay-modal')?.remove();
+
+  const isTrial = plan === 'trial';
+  const modal = document.createElement('div');
+  modal.id = 'pay-modal';
+  modal.innerHTML = `
+<style>
+  #pay-modal{
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(8,10,15,.94);
+    backdrop-filter:blur(16px);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .pm-box{
+    background:#12161f;border:1px solid #1c2535;border-radius:10px;
+    width:100%;max-width:440px;overflow:hidden;
+    box-shadow:0 0 0 1px rgba(245,197,24,.1),0 40px 80px rgba(0,0,0,.7);
+    animation:pmIn .4s cubic-bezier(.16,1,.3,1) both;
+    font-family:'Syne',Arial,sans-serif;
+  }
+  @keyframes pmIn{from{opacity:0;transform:scale(.95) translateY(20px)}to{opacity:1;transform:none}}
+  .pm-close{
+    position:absolute;top:16px;right:20px;
+    background:none;border:none;color:#68788f;
+    font-size:20px;cursor:pointer;line-height:1;
+    transition:color .2s;
+  }
+  .pm-close:hover{color:#f0f4ff;}
+  .pm-head{
+    background:linear-gradient(135deg,#0d0f14,#111c2e);
+    border-bottom:1px solid #1c2535;
+    padding:28px 32px 22px;text-align:center;position:relative;
+  }
+  .pm-hex{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:44px;height:44px;background:#f5c518;
+    clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+    font-family:'Bebas Neue',sans-serif;font-size:13px;color:#000;margin-bottom:14px;
+  }
+  .pm-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#f0f4ff;margin-bottom:4px;}
+  .pm-subtitle{font-size:12px;color:#68788f;}
+  .pm-body{padding:26px 30px;}
+  .pm-label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:#68788f;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;
+  }
+  .pm-phone{
+    width:100%;padding:14px 16px;
+    background:#0d0f14;border:1px solid #253040;
+    border-radius:5px;color:#f0f4ff;
+    font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:1px;
+    outline:none;transition:border-color .2s;margin-bottom:14px;
+  }
+  .pm-phone:focus{border-color:#f5c518;}
+  .pm-phone::placeholder{color:#3a4a60;}
+  .pm-btn{
+    width:100%;padding:15px;border:none;border-radius:5px;cursor:pointer;
+    font-family:'Syne',Arial,sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:2px;text-transform:uppercase;
+    transition:background .2s,transform .15s;
+  }
+  .pm-btn-trial{background:#00e676;color:#000;}
+  .pm-btn-trial:hover{background:#33ec8e;transform:translateY(-1px);}
+  .pm-btn-pay{background:#f5c518;color:#000;}
+  .pm-btn-pay:hover{background:#ffd740;transform:translateY(-1px);}
+  .pm-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .pm-status{
+    display:none;margin-top:14px;padding:12px 16px;
+    border-radius:5px;font-size:12px;line-height:1.6;text-align:center;
+  }
+  .pm-status.info{background:rgba(41,182,246,.08);border:1px solid rgba(41,182,246,.25);color:#7dcef8;}
+  .pm-status.ok  {background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);color:#00e676;}
+  .pm-status.err {background:rgba(255,61,87,.08);border:1px solid rgba(255,61,87,.25);color:#ff8a9b;}
+  .pm-status.show{display:block;}
+  .pm-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(245,197,24,.3);border-top-color:#f5c518;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .pm-note{font-size:11px;color:#3a4a60;text-align:center;margin-top:12px;line-height:1.6;}
+  .pm-foot{border-top:1px solid #1c2535;padding:12px 30px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:#3a4a60;letter-spacing:1px;}
+</style>
+
+<div class="pm-box" role="dialog" aria-modal="true">
+  <div class="pm-head">
+    <button class="pm-close" onclick="document.getElementById('pay-modal').remove()" aria-label="Close">✕</button>
+    <div class="pm-hex">MTB</div>
+    <div class="pm-title">${isTrial ? '3-DAY FREE TRIAL' : '30-DAY ACCESS'}</div>
+    <div class="pm-subtitle">${isTrial ? 'Full access · No card needed · Works offline' : 'KES 150 via M-Pesa · Instant access'}</div>
+  </div>
+
+  <div class="pm-body">
+    <div class="pm-label">${isTrial ? 'YOUR PHONE NUMBER' : 'YOUR SAFARICOM NUMBER'}</div>
+    <input type="tel" id="pm-phone" class="pm-phone"
+      placeholder="0712 345 678" maxlength="13" autocomplete="tel"
+      ${isTrial ? '' : ''}>
+
+    <button id="pm-submit" class="pm-btn ${isTrial ? 'pm-btn-trial' : 'pm-btn-pay'}">
+      ${isTrial ? '🎓  START FREE TRIAL' : '💚  PAY KES 150 VIA M-PESA'}
+    </button>
+
+    <div class="pm-status" id="pm-status"></div>
+
+    <p class="pm-note">
+      ${isTrial ? 'One free trial per phone number.' : 'You will receive an M-Pesa PIN prompt on your phone.<br>Access is granted instantly after payment.'}
+    </p>
+  </div>
+
+  <div class="pm-foot">
+    SECURED · SAFARICOM M-PESA · FRAMWAKA ULTRATECH
+  </div>
+</div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Close on backdrop click
+  modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
+
+  // Auto-focus
+  setTimeout(() => document.getElementById('pm-phone')?.focus(), 80);
+
+  // Bind submit
+  const submitBtn = document.getElementById('pm-submit');
+  const phoneEl   = document.getElementById('pm-phone');
+
+  async function submit(){
+    const phone = phoneEl.value.trim();
+    if(!phone){ pmStatus('Enter your phone number.','err'); phoneEl.focus(); return; }
+
+    submitBtn.disabled = true;
+
+    if(plan === 'trial'){
+      pmStatus('<span class="pm-spin"></span> Setting up your trial…','info');
+      try{
+        const r = await fetch(`${API}/api/pay`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,plan:'trial'})});
+        const d = await r.json();
+        if(!r.ok||!d.success) throw new Error(d.error||'Failed.');
+        // Store auth in localStorage so the app knows we're valid
+        localStorage.setItem('mtb_auth', JSON.stringify({phone,token:d.token,expiry:d.expiry,plan:'trial'}));
+        localStorage.setItem('mtb_had_trial','1');
+        pmStatus('🎉 Trial activated! Redirecting to app…','ok');
+        setTimeout(()=>{ window.location.href='index.html'; },1400);
+      }catch(e){
+        pmStatus(`✗ ${e.message}`,'err');
+        submitBtn.disabled=false;
+      }
+      return;
+    }
+
+    // Paid plan
+    pmStatus('<span class="pm-spin"></span> Sending M-Pesa prompt…','info');
+    try{
+      const r = await fetch(`${API}/api/pay`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,plan})});
+      const d = await r.json();
+      if(!r.ok||!d.success) throw new Error(d.error||'Payment request failed.');
+
+      pmStatus('<span class="pm-spin"></span> <strong>Check your phone!</strong> Enter your M-Pesa PIN.<br><small style="opacity:.7">Waiting for confirmation…</small>','info');
+
+      // Poll for up to 90s
+      const deadline = Date.now() + 90000;
+      while(Date.now() < deadline){
+        await new Promise(res=>setTimeout(res,3000));
+        try{
+          const vr = await fetch(`${API}/api/verify?phone=${encodeURIComponent(phone)}`);
+          const vd = await vr.json();
+          if(vd.paid){
+            localStorage.setItem('mtb_auth', JSON.stringify({phone,token:vd.token,expiry:vd.expiry,plan:vd.plan}));
+            pmStatus(`✓ Payment confirmed! ${vd.daysLeft} days access. Redirecting…`,'ok');
+            setTimeout(()=>{ window.location.href='index.html'; },1400);
+            return;
+          }
+        }catch{}
+      }
+      pmStatus('⏱ Timed out — did you enter your PIN? Close this and try "Check Payment Status" on the app.','err');
+      submitBtn.disabled=false;
+    }catch(e){
+      pmStatus(`✗ ${e.message}`,'err');
+      submitBtn.disabled=false;
+    }
+  }
+
+  submitBtn.addEventListener('click', submit);
+  phoneEl.addEventListener('keydown', e=>{ if(e.key==='Enter') submit(); });
+}
+
+function pmStatus(html,type){
+  const el=document.getElementById('pm-status');
+  if(!el)return;
+  el.innerHTML=html; el.className=`pm-status ${type} show`;
+}
+</script>
+
+<!-- ══ WHATSAPP FLOATING BUTTON ══ -->
+<style>
+  /* ── Bubble ── */
+  #wa-bubble {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 8000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    font-family: 'Syne', Arial, sans-serif;
+  }
+
+  /* ── Tooltip card ── */
+  #wa-tooltip {
+    background: #12161f;
+    border: 1px solid #25d366;
+    border-radius: 10px;
+    padding: 14px 18px;
+    max-width: 240px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.55), 0 0 0 1px rgba(37,211,102,.08);
+    opacity: 0;
+    transform: translateY(10px) scale(.97);
+    pointer-events: none;
+    transition: opacity .22s cubic-bezier(.16,1,.3,1),
+                transform .22s cubic-bezier(.16,1,.3,1);
+  }
+
+  #wa-bubble.open #wa-tooltip {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+
+  .wa-tt-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .wa-tt-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #25d366;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .wa-tt-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f0f4ff;
+    line-height: 1.2;
+  }
+
+  .wa-tt-status {
+    font-size: 10px;
+    color: #25d366;
+    letter-spacing: .5px;
+  }
+
+  .wa-tt-msg {
+    font-size: 12px;
+    color: #8898aa;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .wa-tt-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 0;
+    background: #25d366;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .18s, transform .15s;
+  }
+  .wa-tt-btn:hover { background: #1ebe59; transform: translateY(-1px); }
+
+  .wa-tt-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #3a4a60;
+    font-size: 16px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    transition: color .15s;
+  }
+  .wa-tt-close:hover { color: #f0f4ff; }
+
+  /* ── Main FAB ── */
+  #wa-fab {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: #25d366;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(37,211,102,.45), 0 2px 8px rgba(0,0,0,.35);
+    transition: transform .2s cubic-bezier(.16,1,.3,1),
+                box-shadow .2s,
+                background .18s;
+    position: relative;
+    flex-shrink: 0;
+  }
+  #wa-fab:hover {
+    transform: scale(1.1);
+    background: #1ebe59;
+    box-shadow: 0 6px 28px rgba(37,211,102,.6), 0 2px 10px rgba(0,0,0,.4);
+  }
+  #wa-fab:active { transform: scale(.95); }
+
+  /* WhatsApp SVG icon */
+  #wa-fab svg { width: 30px; height: 30px; }
+
+  /* Ping animation on fab when tooltip is closed */
+  #wa-bubble:not(.open) #wa-fab::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 2px solid #25d366;
+    animation: wa-ping 2.4s ease-out 3s infinite;
+    opacity: 0;
+  }
+  @keyframes wa-ping {
+    0%   { transform: scale(1);   opacity: .6; }
+    80%  { transform: scale(1.55); opacity: 0; }
+    100% { transform: scale(1.55); opacity: 0; }
+  }
+
+  /* Unread dot */
+  #wa-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 13px;
+    height: 13px;
+    background: #f5c518;
+    border: 2px solid #080a0f;
+    border-radius: 50%;
+    transition: opacity .2s;
+  }
+  #wa-bubble.open #wa-dot { opacity: 0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    #wa-bubble { bottom: 18px; right: 16px; }
+    #wa-tooltip { max-width: 210px; }
+  }
+</style>
+
+<div id="wa-bubble">
+
+  <!-- Tooltip card -->
+  <div id="wa-tooltip" role="dialog" aria-label="Chat on WhatsApp" style="position:relative;">
+    <button class="wa-tt-close" id="wa-close" aria-label="Close">✕</button>
+    <div class="wa-tt-header">
+      <div class="wa-tt-avatar">🎓</div>
+      <div>
+        <div class="wa-tt-name">MTB Simulator Support</div>
+        <div class="wa-tt-status">● Online</div>
+      </div>
+    </div>
+    <p class="wa-tt-msg">
+      👋 Hi! Questions about the NTSA test prep or your subscription?<br>
+      Chat with us — we reply in minutes.
+    </p>
+    <a id="wa-chat-link"
+       href="https://wa.me/254700000000?text=Hi%2C%20I%20have%20a%20question%20about%20the%20MTB%20Simulator"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="wa-tt-btn">
+      <!-- WhatsApp logo inline -->
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      CHAT ON WHATSAPP
+    </a>
+  </div>
+
+  <!-- FAB button -->
+  <button id="wa-fab" aria-label="Chat on WhatsApp" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    <span id="wa-dot"></span>
+  </button>
+
+</div>
+
+<script>
+(function(){
+  /* ── Config: change this to your real WhatsApp number ── */
+  const WA_NUMBER  = '254700000000';     // 254 + number without leading 0
+  const WA_MESSAGE = 'Hi, I have a question about the MTB Simulator';
+
+  /* Build URL once */
+  const link = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MESSAGE)}`;
+  document.getElementById('wa-chat-link').href = link;
+
+  const bubble = document.getElementById('wa-bubble');
+  const fab    = document.getElementById('wa-fab');
+  const close  = document.getElementById('wa-close');
+
+  /* Open / close toggle */
+  function openBubble()  { bubble.classList.add('open');    fab.setAttribute('aria-expanded','true');  }
+  function closeBubble() { bubble.classList.remove('open'); fab.setAttribute('aria-expanded','false'); }
+  function toggle()      { bubble.classList.contains('open') ? closeBubble() : openBubble(); }
+
+  fab.addEventListener('click', toggle);
+  close.addEventListener('click', e => { e.stopPropagation(); closeBubble(); });
+
+  /* Close on outside click */
+  document.addEventListener('click', e => {
+    if (!bubble.contains(e.target)) closeBubble();
+  });
+
+  /* Close on Escape */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeBubble();
+  });
+
+  /* Auto-open once after 8 s (only on first visit) */
+  if (!sessionStorage.getItem('wa_shown')) {
+    setTimeout(() => { openBubble(); sessionStorage.setItem('wa_shown','1'); }, 8000);
+  }
+})();
+</script>
+
+</body>
+</html>
