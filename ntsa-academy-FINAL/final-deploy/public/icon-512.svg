@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#0d0f14"/>
-  <polygon points="256,50 462,162 462,350 256,462 50,350 50,162" fill="#f5c518"/>
-  <text x="256" y="300" font-family="Arial,sans-serif" font-weight="bold" font-size="140" text-anchor="middle" fill="#0d0f14">MTB</text>
-</svg>
