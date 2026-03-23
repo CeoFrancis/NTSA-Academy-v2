@@ -35,11 +35,26 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
-app.use(express.static(path.join(__dirname, 'public')));   // serve PWA files
+
+/* ── Resolve static files directory ──────────────────────────────
+   Works whether files are in  ./public/  (recommended structure)
+   or flat next to server.js  (e.g. dragged into Render manually).
+   Check which layout is present at startup and use that.        */
+const fs = require('fs');
+const PUBLIC_DIR = fs.existsSync(path.join(__dirname, 'public', 'index.html'))
+  ? path.join(__dirname, 'public')   // structured: public/ subfolder
+  : __dirname;                        // flat: everything alongside server.js
+
+app.use(express.static(PUBLIC_DIR));
 
 /* Serve landing page at root / */
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+  const landing = path.join(PUBLIC_DIR, 'landing.html');
+  if (fs.existsSync(landing)) {
+    res.sendFile(landing);
+  } else {
+    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  }
 });
 
 /* ─────────────────────────────────────────────
