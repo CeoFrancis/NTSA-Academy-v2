@@ -40,7 +40,6 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
    Works whether files are in  ./public/  (recommended structure)
    or flat next to server.js  (e.g. dragged into Render manually).
    Check which layout is present at startup and use that.        */
-const fs = require('fs');
 const PUBLIC_DIR = fs.existsSync(path.join(__dirname, 'public', 'index.html'))
   ? path.join(__dirname, 'public')   // structured: public/ subfolder
   : __dirname;                        // flat: everything alongside server.js
