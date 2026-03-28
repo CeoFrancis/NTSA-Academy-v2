@@ -44,7 +44,7 @@ const PUBLIC_DIR = fs.existsSync(path.join(__dirname, 'public', 'index.html'))
   ? path.join(__dirname, 'public')   // structured: public/ subfolder
   : __dirname;                        // flat: everything alongside server.js
 
-app.use(express.static(PUBLIC_DIR));
+/*app.use(express.static(PUBLIC_DIR));*/
 
 /* Serve landing page at root / */
 app.get('/', (req, res) => {
